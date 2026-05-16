@@ -340,7 +340,7 @@ if (window.location.hostname.includes('vercel.app')) return
 const APP_URL =
   window.location.hostname === 'localhost'
     ? 'http://localhost:3000'
-    : 'https://vaiga-g2p5b95u0-groupvaigas-projects.vercel.app'
+    : 'https://vaiga-three.vercel.app'
 
 panel.innerHTML = `
   <button id="va-min-btn" title="Minimize">−</button>
