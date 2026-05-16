@@ -236,7 +236,8 @@ document.addEventListener('click', (e) => {
 
   try {
      if (window.location.hostname === 'localhost') return
-    if (window.location.hostname === '127.0.0.1') return
+if (window.location.hostname === '127.0.0.1') return
+if (window.location.hostname.includes('vercel.app')) return
     const el = getClickable(e.target)
 
     if (!el?.getBoundingClientRect)
