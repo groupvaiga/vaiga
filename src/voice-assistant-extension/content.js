@@ -8,7 +8,8 @@ const SCREEN_KEYWORDS = [
 
 if (!window.__VAIGA_LOADED__) {
 
-  window.__VAIGA_LOADED__ = true
+  window.__VAIGA_LOADED__ = true;
+console.log("VAIGA content script loaded");
 
   // ── Inject styles ───────────────────────────────────────
   const style = document.createElement('style')
@@ -539,7 +540,13 @@ document.addEventListener('click', (e) => {
   // ── Mini broadcast ──────────────────────────────────────
   setInterval(() => {
 
-    const val = localStorage.getItem('vaiga-mini-open')
+   let val = null
+
+try {
+  val = localStorage.getItem('vaiga-mini-open')
+} catch (e) {
+  console.log('localStorage blocked')
+}
 
     if (!val) return
 

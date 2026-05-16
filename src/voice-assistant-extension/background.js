@@ -19,8 +19,9 @@ chrome.tabs.onUpdated.addListener((tabId,changeInfo,tab)=>{
 function findRecorderTab(callback){
   chrome.tabs.query({},(tabs)=>{
     const tab=tabs.find(t=>t.url&&(
-      t.url.includes('localhost:3000')||
-      t.url.includes('localhost:3001')
+      t.url.includes('localhost:3000') ||
+      t.url.includes('localhost:3001') ||
+      t.url.includes('vercel.app')
     ))
     callback(tab||null)
   })

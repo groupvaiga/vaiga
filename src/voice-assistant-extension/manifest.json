@@ -10,19 +10,14 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://*/*",
-    "http://*/*",
-    "https://localhost:3000/*",
-    "http://localhost:3000/*",
-    "https://localhost:3001/*",
-    "http://localhost:3001/*"
-  ],
+  "<all_urls>"
+],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://*/*", "http://*/*"],
+      "matches": ["<all_urls>"],
       "js": ["content.js"],
       "run_at": "document_idle",
       "all_frames": false
