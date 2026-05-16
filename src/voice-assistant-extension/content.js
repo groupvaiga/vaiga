@@ -336,23 +336,28 @@ document.addEventListener('click', (e) => {
   panel.id = 'va-panel'
   panel.className = 'hidden'
 
-  panel.innerHTML = `
-    <button id="va-min-btn" title="Minimize">−</button>
+const APP_URL =
+  window.location.hostname === 'localhost'
+    ? 'http://localhost:3000'
+    : 'https://vaiga-g2p5b95u0-groupvaigas-projects.vercel.app'
 
-    <div id="va-mic-icon">
-      <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-        <rect x="17" y="6" width="14" height="22"
-          rx="7" fill="white" fill-opacity="0.95"/>
-      </svg>
-    </div>
+panel.innerHTML = `
+  <button id="va-min-btn" title="Minimize">−</button>
 
-    <iframe
-      id="va-iframe"
-      src="https://localhost:3000/?mini=true"
-      allow="microphone; autoplay"
-      style="border:none;"
-    ></iframe>
-  `
+  <div id="va-mic-icon">
+    <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+      <rect x="17" y="6" width="14" height="22"
+        rx="7" fill="white" fill-opacity="0.95"/>
+    </svg>
+  </div>
+
+  <iframe
+    id="va-iframe"
+    src="${APP_URL}/Home?mini=true"
+    allow="microphone *; autoplay *"
+    style="border:none;"
+  ></iframe>
+`
 
   document.body.appendChild(panel)
 
