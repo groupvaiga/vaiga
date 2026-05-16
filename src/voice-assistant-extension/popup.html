@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      min-height: 200px;
+      background: #060612;
+      color: #fff;
+      font-family: Inter, sans-serif;
+      padding: 20px;
+    }
+    h2 {
+      font-size: 1.2rem;
+      margin-bottom: 6px;
+      color: #a78bfa;
+    }
+    p {
+      font-size: 0.8rem;
+      color: #475569;
+      margin-bottom: 16px;
+    }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+    .open {
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      color: #fff;
+    }
+    .status {
+      background: #0f0f1a;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.8rem;
+      color: #10b981;
+    }
+  </style>
+</head>
+<body>
+  <h2>✨ VAIGA</h2>
+  <p>Voice Assistant Integrated Guide AI</p>
+
+  <button class="btn open" onclick="openApp()">
+    🚀 Open VAIGA App
+  </button>
+
+  <button class="btn open" style="background:linear-gradient(135deg,#10b981,#059669)"
+    onclick="openRecorder()">
+    🎥 Open Expert Recorder
+  </button>
+
+  <div class="status" id="status">
+    🟢 Extension active
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

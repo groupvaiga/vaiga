@@ -121,15 +121,18 @@ export default function Signup({ onGoLogin }) {
 
     setLoading(true)
     try {
-      const res  = await fetch('http://localhost:5000/signup', {
+      const res  = await fetch('https://vaigabackend.onrender.com/api/signup', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          first:    form.first,
-          last:     form.last,
-          email:    form.email,
-          password: form.password,
-        }),
+        body: JSON.stringify({
+
+  name: `${form.first} ${form.last}`,
+
+  email: form.email,
+
+  password: form.password
+
+}),
       })
       const data = await res.json()
 
@@ -137,7 +140,7 @@ export default function Signup({ onGoLogin }) {
         alert('✅ ' + data.message)
         navigate('/login')
       } else {
-        alert('❌ ' + data.message)
+        alert('❌ ' + (data.error || data.message))
       }
     } catch (err) {
       console.error(err)

@@ -47,7 +47,7 @@ export default function Login({ onGoSignup }) {
   const navigate=useNavigate();
   const handleLogin = async () => {
   try {
-    const res = await fetch("http://localhost:5000/login", {
+    const res = await fetch( "https://vaigabackend.onrender.com/api/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -59,13 +59,33 @@ export default function Login({ onGoSignup }) {
     });
 
     const data = await res.json();
-
+    
     if (res.ok) {
-      alert("✅ " + data.message);
-      console.log(data.user);
-      navigate('/Home');
-    } else {
-      alert("❌ " + data.message);
+
+  localStorage.setItem(
+
+    'user',
+
+    JSON.stringify(data.user)
+
+  )
+
+  localStorage.setItem(
+
+    'token',
+
+    data.token
+
+  )
+
+  alert("✅ Login successful");
+
+  console.log(data.user);
+
+  navigate('/Home');
+
+}  else {
+      alert("❌ " + (data.error || data.message));
     }
 
   } catch (err) {

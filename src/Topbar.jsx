@@ -22,6 +22,7 @@ export default function Topbar({ onNewChat }) {
       </span>
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+
         {/* New chat */}
         <button
           onClick={onNewChat}
@@ -48,6 +49,26 @@ export default function Topbar({ onNewChat }) {
           </svg>
         </button>
 
+        {/* Mini View */}
+        <button
+          title="Mini View"
+          onClick={() => window.open(
+            window.location.origin + '?mini=true',
+            'vaiga-mini',
+            'width=300,height=380,resizable=no,menubar=no,toolbar=no,location=no,status=no'
+          )}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', transition: 'color .2s' }}
+          onMouseEnter={e => e.currentTarget.style.color = '#64748b'}
+          onMouseLeave={e => e.currentTarget.style.color = '#374151'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+        </button>
+
         {/* Avatar */}
         <div style={{
           width: 28, height: 28, borderRadius: '50%',
@@ -56,6 +77,7 @@ export default function Topbar({ onNewChat }) {
           fontSize: 10, fontWeight: 700, color: '#fff', cursor: 'pointer',
           boxShadow: '0 0 10px rgba(124,58,237,0.3)',
         }}>MP</div>
+
       </div>
     </div>
   )

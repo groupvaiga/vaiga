@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "VAIGA",
+  "version": "1.0",
+  "description": "Voice Assistant Integrated Guide AI",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*",
+    "https://localhost:3000/*",
+    "http://localhost:3000/*",
+    "https://localhost:3001/*",
+    "http://localhost:3001/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*/*", "http://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["domExtractor.js", "content.js"],
+      "matches": ["https://*/*", "http://*/*"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

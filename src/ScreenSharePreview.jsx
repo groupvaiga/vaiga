@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-export default function ScreenSharePreview({ stream, onStop, videoRef }) {
+export default function ScreenSharePreview({ stream, videoRef }) {
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream
@@ -15,11 +15,11 @@ export default function ScreenSharePreview({ stream, onStop, videoRef }) {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#020617', // dark clean bg
+      background: '#020617',
       position: 'relative',
     }}>
 
-      {/* 🎥 Video container */}
+      {/* Video only — buttons handled by Home.jsx */}
       <div style={{
         width: '90%',
         maxWidth: 1200,
@@ -37,51 +37,11 @@ export default function ScreenSharePreview({ stream, onStop, videoRef }) {
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'contain', // 🔥 IMPORTANT FIX
+            objectFit: 'contain',
           }}
         />
       </div>
 
-      {/* 🎮 Controls */}
-      <div style={{
-        marginTop: 20,
-        display: 'flex',
-        gap: 12,
-      }}>
-        <button
-          onClick={async () => {
-            if (videoRef.current !== document.pictureInPictureElement) {
-              await videoRef.current.requestPictureInPicture()
-            } else {
-              await document.exitPictureInPicture()
-            }
-          }}
-          style={{
-            padding: '10px 16px',
-            borderRadius: 8,
-            border: 'none',
-            background: '#1e293b',
-            color: '#fff',
-            cursor: 'pointer'
-          }}
-        >
-          📺 Mini View
-        </button>
-
-        <button
-          onClick={onStop}
-          style={{
-            padding: '10px 16px',
-            borderRadius: 8,
-            border: 'none',
-            background: '#ef4444',
-            color: '#fff',
-            cursor: 'pointer'
-          }}
-        >
-          🛑 Stop Sharing
-        </button>
-      </div>
     </div>
   )
 }
