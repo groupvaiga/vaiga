@@ -656,7 +656,12 @@ const handleEndChat = async () => {
         </div>
       ) : (
         <ParticlesBackground>
-          <div style={{ display: 'flex', height: '100vh', width: '100vw' }}>
+          <div style={{
+  display: 'flex',
+  height: '100dvh',
+  width: '100vw',
+  overflow: 'hidden'
+}}>
   <Sidebar
 
   userName={userName}
@@ -778,10 +783,11 @@ const handleEndChat = async () => {
 
               {(!screenStream || activeTab === 'speak') && (
 
- <div style={{
+<div style={{
   flex: 1,
   display: 'flex',
-  overflow: 'hidden'
+  overflow: 'hidden',
+  minHeight: 0
 }}>
 
   {/* ── CHAT COLUMN ───────────────── */}
@@ -796,7 +802,7 @@ const handleEndChat = async () => {
 
     flexShrink: 0,
 
-    height: '760px',
+    height: 'calc(100dvh - 90px)',
 
     margin: '18px',
 
