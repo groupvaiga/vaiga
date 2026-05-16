@@ -2,6 +2,9 @@
 
 const NAV_ITEMS = [
   { icon: '✦', label: 'New Session', action: 'onNewChat' },
+
+  { icon: '🎓', label: 'StudentHelper', action: null },
+
   { icon: '⌕', label: 'Transcripts', action: null },
   { icon: '◎', label: 'Voice Clips', action: null },
   { icon: '⊞', label: 'Notebooks', action: null },
