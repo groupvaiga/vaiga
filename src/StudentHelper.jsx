@@ -1,6 +1,6 @@
 /* global chrome */
 import { useState, useRef, useEffect, useCallback } from 'react'
-
+import { useNavigate } from 'react-router-dom'
 const VM2_URL    = 'https://40.76.107.196'
 const WS_URL     = 'wss://40.76.107.196/live'
 const AGENT      = 'https://127.0.0.1:9999'
@@ -25,7 +25,7 @@ function speakText(text, onStart, onEnd) {
 }
 
 export default function StudentHelper() {
-
+ const navigate = useNavigate()
   const [sessionId,     setSessionId]     = useState('')
   const [connected,     setConnected]     = useState(false)
   const [screenStream,  setScreenStream]  = useState(null)
@@ -469,6 +469,23 @@ const connectSession = async () => {
 
   return (
     <div style={s.page}>
+      <div style={{ marginBottom: '20px' }}>
+  <button
+    onClick={() => navigate('/home')}
+    style={{
+      padding: '12px 20px',
+      borderRadius: '14px',
+      border: '1px solid rgba(255,255,255,0.08)',
+      background: 'linear-gradient(135deg,#1e293b,#0f172a)',
+      color: '#fff',
+      cursor: 'pointer',
+      fontWeight: 700,
+      fontSize: '0.92rem'
+    }}
+  >
+    ← Back to Home
+  </button>
+</div>
       <div style={s.floatingOrb} />
       <h1 style={s.heroTitle}>Vaiga AI</h1>
       <p style={s.heroSub}>GPS-style workflow navigation assistant</p>

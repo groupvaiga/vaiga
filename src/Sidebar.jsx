@@ -1,5 +1,5 @@
 // ── Sidebar ──────────────────────────────────────────────────
-
+import { useNavigate } from 'react-router-dom'
 const NAV_ITEMS = [
   { icon: '✦', label: 'New Session', action: 'onNewChat' },
 
@@ -32,7 +32,7 @@ export default function Sidebar({
   userInitials
 
 }) {
-
+ const navigate = useNavigate()
   const resolveAction = (key) =>
     key === 'onNewChat'
       ? onNewChat
@@ -162,14 +162,20 @@ export default function Sidebar({
           <button
             key={item.label}
 
-            onClick={() => {
+           onClick={() => {
 
-              setActiveItem(item.label)
+  setActiveItem(item.label)
 
-              const action = resolveAction(item.action)
+  // Navigate to StudentHelper
+  if (item.label === 'StudentHelper') {
+    window.location.href = '/studenthelper'
+    return
+  }
 
-              if (action) action()
-            }}
+  const action = resolveAction(item.action)
+
+  if (action) action()
+}}
 
             style={{
 
