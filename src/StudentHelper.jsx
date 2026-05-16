@@ -1,6 +1,7 @@
 /* global chrome */
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+
 const VM2_URL    = 'https://40.76.107.196'
 const WS_URL     = 'wss://40.76.107.196/live'
 const AGENT      = 'https://127.0.0.1:9999'
@@ -25,7 +26,8 @@ function speakText(text, onStart, onEnd) {
 }
 
 export default function StudentHelper() {
- const navigate = useNavigate()
+  const navigate = useNavigate()
+
   const [sessionId,     setSessionId]     = useState('')
   const [connected,     setConnected]     = useState(false)
   const [screenStream,  setScreenStream]  = useState(null)
@@ -40,11 +42,9 @@ export default function StudentHelper() {
   const [autoCountdown, setAutoCountdown] = useState(0)
   const [stepResult,    setStepResult]    = useState('')
   const [pageState,     setPageState]     = useState('')
-
-  // ── GPS State ─────────────────────────────────────────────
-  const [steps,       setSteps]       = useState([])
-  const [currentStep, setCurrentStep] = useState(0)
-  const [stepCount,   setStepCount]   = useState(0)
+  const [steps,         setSteps]         = useState([])
+  const [currentStep,   setCurrentStep]   = useState(0)
+  const [stepCount,     setStepCount]     = useState(0)
 
   const videoRef        = useRef(null)
   const wsRef           = useRef(null)
@@ -66,7 +66,6 @@ export default function StudentHelper() {
   useEffect(() => { stepsRef.current       = steps       }, [steps])
   useEffect(() => { currentStepRef.current = currentStep }, [currentStep])
 
-  // Fix ResizeObserver
   useEffect(() => {
     const h = (e) => {
       if (e.message?.includes('ResizeObserver')) {
@@ -78,7 +77,6 @@ export default function StudentHelper() {
     return () => window.removeEventListener('error', h)
   }, [])
 
-  // Keep speech alive
   useEffect(() => {
     const iv = setInterval(() => {
       if (window.speechSynthesis.speaking) {
@@ -88,7 +86,6 @@ export default function StudentHelper() {
     return () => clearInterval(iv)
   }, [])
 
-  // URL sync
   useEffect(() => {
     const iv = setInterval(() => {
       if (!window.chrome?.runtime?.id) return
@@ -111,35 +108,30 @@ export default function StudentHelper() {
     }
   }, [screenStream])
 
-  // ── Screenshot — 1280x800 for HiDPI ──────────────────────
   const captureScreen = useCallback(() => {
     const v = videoRef.current
     if (!v || !v.videoWidth) return null
     const canvas = document.createElement('canvas')
-    canvas.width  = 1280  // ✅ was 640
-    canvas.height = 800   // ✅ was 400
+    canvas.width = 1280; canvas.height = 800
     canvas.getContext('2d').drawImage(v, 0, 0, 1280, 800)
     return canvas.toDataURL('image/jpeg', 0.8).split(',')[1]
   }, [])
 
-    const detectCurrentStep = useCallback((loadedSteps) => {
-  const currUrl = currentUrlRef.current
-  if (!currUrl) return 0
-  let bestMatch = 0
-  loadedSteps.forEach((step, idx) => {
-    if (!step.url) return
-    try {
-      const stepHost = new URL(step.url).hostname
-      const currHost = new URL(currUrl).hostname
-      if (stepHost === currHost) {
-        bestMatch = idx
-      }
-    } catch {}
-  })
-  return bestMatch
-}, [])
+  const detectCurrentStep = useCallback((loadedSteps) => {
+    const currUrl = currentUrlRef.current
+    if (!currUrl) return 0
+    let bestMatch = 0
+    loadedSteps.forEach((step, idx) => {
+      if (!step.url) return
+      try {
+        const stepHost = new URL(step.url).hostname
+        const currHost = new URL(currUrl).hostname
+        if (stepHost === currHost) bestMatch = idx
+      } catch {}
+    })
+    return bestMatch
+  }, [])
 
-  // ── Auto click ────────────────────────────────────────────
   const doClick = useCallback(async (x_pct, y_pct, typed='', target='') => {
     if (y_pct > 92 || y_pct < 5 || x_pct < 3 || x_pct > 97) {
       console.log('⚠️ Unsafe coords skipped:', x_pct, y_pct)
@@ -157,15 +149,17 @@ export default function StudentHelper() {
     } catch (e) { console.log('⚠️ agent.py not running', e) }
   }, [])
 
-  // ── GPS: Guide current step ───────────────────────────────
   const guideCurrentStep = useCallback((idx) => {
     const all = stepsRef.current
     if (!all.length || idx >= all.length) {
       setAnswer('✅ All steps complete! Workflow done!')
       setArrow(null); return
     }
-    const step = all[idx]
-    const desc = step.voice || step.description || `Step ${step.step}`
+    const step    = all[idx]
+    const rawDesc = step.description || step.voice || `Step ${step.step}`
+    const desc    = rawDesc.length > 150
+      ? rawDesc.slice(0, 150).split('.')[0] + '.'
+      : rawDesc
 
     setAnswer(`Step ${idx+1}/${all.length}: ${desc}`)
     setStepResult(`📍 Step ${idx+1} of ${all.length}`)
@@ -183,7 +177,6 @@ export default function StudentHelper() {
     console.log(`📍 GPS Step ${idx+1}: ${desc}`)
   }, [])
 
-  // ── GPS: Verify + Advance ─────────────────────────────────
   const verifyAndAdvance = useCallback(async () => {
     const all = stepsRef.current
     const idx = currentStepRef.current
@@ -191,36 +184,83 @@ export default function StudentHelper() {
 
     const step = all[idx]
 
-    // URL check — right page?
+    // Step 1 — Extension DOM fetch
+    let domElements = []
     try {
-      const stepHost = step.url ? new URL(step.url).hostname : ''
-      const currHost = currentUrlRef.current ? new URL(currentUrlRef.current).hostname : ''
-      if (stepHost && currHost && stepHost !== currHost) {
-        setStepResult(`⚠️ Go to: ${step.url} first!`)
-        setAnswer(`Please navigate to ${step.url}`)
-        return
-      }
+      domElements = await new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+          { type: 'get-dom-elements' },
+          (res) => resolve(res?.elements || [])
+        )
+      })
     } catch {}
 
-    // Auto click using GPS coordinates
-    if (step.x_pct && step.y_pct && autoModeRef.current) {
-      setStepResult('🖱️ Clicking...')
-      await doClick(step.x_pct, step.y_pct, step.typed || '', step.target || '')
-      await new Promise(r => setTimeout(r, 2000))
-      setStepResult(`✅ Step ${idx+1} done!`)
+    // Step 2 — Target match with DOM
+    const target  = step.target || ''
+    const matched = domElements.find(el =>
+      el.name?.toLowerCase().includes(target.toLowerCase()) ||
+      target.toLowerCase().includes(el.name?.toLowerCase())
+    )
 
-      const next = idx + 1
-      setCurrentStep(next)
-      currentStepRef.current = next
-      setTimeout(() => guideCurrentStep(next), 1500)
+    if (matched) {
+      console.log(`🎯 DOM match: "${matched.name}"`)
+      setStepResult(`🎯 Found: ${matched.name}`)
+      try {
+        const r = await fetch(`${AGENT}/dom_click`, {
+          method:  'POST',
+          headers: { 'Content-Type':'application/json' },
+          body:    JSON.stringify({ name: matched.name })
+        })
+        const data = await r.json()
+        if (data.status === 'clicked') {
+          setStepResult(`✅ Clicked "${matched.name}"`)
+          await new Promise(r => setTimeout(r, 2000))
+          const next = idx + 1
+          setCurrentStep(next)
+          currentStepRef.current = next
+          guideCurrentStep(next)
+          return
+        }
+      } catch {}
     }
-  }, [doClick, guideCurrentStep])
 
-  // ── Manual question → guided_ask ─────────────────────────
+    // Step 3 — Qwen fallback
+    const img = captureScreen()
+    if (!img) { setStepResult('⚠️ Share screen first!'); return }
+    setStepResult('🔍 Qwen analyzing...')
+    try {
+      const r = await fetch(`${VM2_URL}/guided_ask`, {
+        method:  'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          question:   `Find and click: ${target}`,
+          image:      img,
+          url:        currentUrlRef.current || '',
+        })
+      })
+      const data = await r.json()
+      if (data.next_x !== null && data.next_x !== undefined) {
+        setArrow({ x: data.next_x, y: data.next_y })
+        setTimeout(() => setArrow(null), 5000)
+        if (autoModeRef.current) {
+          await doClick(data.next_x, data.next_y, step.typed||'', target)
+          await new Promise(r => setTimeout(r, 2000))
+          setStepResult(`✅ Step ${idx+1} done!`)
+          const next = idx + 1
+          setCurrentStep(next)
+          currentStepRef.current = next
+          setTimeout(() => guideCurrentStep(next), 1500)
+        }
+      } else {
+        setStepResult(`⚠️ Could not find: ${target}`)
+      }
+    } catch { setStepResult('⚠️ Analysis failed') }
+  }, [doClick, guideCurrentStep, captureScreen, sessionId])
+
   const askVaiga = useCallback(async (text) => {
     if (!text || !connected) return
     if (!screenStream) { setAnswer('Share your screen first!'); return }
-
     setLoading(true); setArrow(null); setStepResult('')
     try {
       const img = captureScreen()
@@ -241,17 +281,14 @@ export default function StudentHelper() {
       const finalAnswer = data.answer || 'No guidance available.'
       setAnswer(finalAnswer)
       if (data.page_state) setPageState(data.page_state)
-
       if (data.next_x !== null && data.next_x !== undefined) {
         setArrow({ x: data.next_x, y: data.next_y })
         setTimeout(() => setArrow(null), 10000)
       }
-
       isSpeaking.current = true
       speakText(finalAnswer,
         () => setSpeaking(true),
         () => { setSpeaking(false); isSpeaking.current = false })
-
     } catch (err) {
       if (err.name === 'AbortError') setAnswer('Request timed out.')
       else setAnswer('Error connecting.')
@@ -259,14 +296,12 @@ export default function StudentHelper() {
     } finally { setLoading(false) }
   }, [connected, sessionId, captureScreen, screenStream])
 
-  // ── Auto mode — GPS ONLY, no Qwen ────────────────────────
   useEffect(() => {
     clearInterval(autoTimerRef.current)
     clearInterval(countdownRef.current)
     setAutoCountdown(0)
     if (!autoMode || !connected || !screenStream) return
 
-    // Guide current step immediately
     guideCurrentStep(currentStepRef.current)
 
     let count = 8; setAutoCountdown(count)
@@ -275,7 +310,6 @@ export default function StudentHelper() {
       if (count <= 0) count = 8
     }, 1000)
 
-    // GPS only — NO askVaiga ✅
     autoTimerRef.current = setInterval(() => {
       if (loading || isSpeaking.current) return
       if (!screenStream) return
@@ -288,7 +322,6 @@ export default function StudentHelper() {
     }
   }, [autoMode, connected, screenStream, loading, guideCurrentStep, verifyAndAdvance])
 
-  // ── Mic ───────────────────────────────────────────────────
   const stopMic = useCallback(() => {
     clearTimeout(silenceTimer.current)
     processorRef.current?.disconnect(); processorRef.current = null
@@ -310,7 +343,6 @@ export default function StudentHelper() {
       const gainNode  = audioCtx.createGain(); gainNode.gain.value = 0
       source.connect(processor); processor.connect(gainNode); gainNode.connect(audioCtx.destination)
       processorRef.current = processor
-
       const ws = new WebSocket(WS_URL); wsRef.current = ws
       const sendAudio = (e) => {
         if (ws.readyState !== WebSocket.OPEN) return
@@ -323,12 +355,10 @@ export default function StudentHelper() {
         }
         ws.send(buffer)
       }
-
       ws.onopen = () => {
         setMicState('listening'); setTranscript('Listening...')
         processor.onaudioprocess = sendAudio
       }
-
       ws.onmessage = async (e) => {
         try {
           const data = JSON.parse(e.data)
@@ -342,18 +372,14 @@ export default function StudentHelper() {
               silenceTimer.current = setTimeout(async () => {
                 setMicState('thinking')
                 processor.onaudioprocess = null
-
-                // Voice command: "next/done" → GPS advance
                 if (/\b(next|done|continue|proceed)\b/i.test(text)) {
                   const next = currentStepRef.current + 1
                   setCurrentStep(next)
                   currentStepRef.current = next
                   guideCurrentStep(next)
                 } else {
-                  // Other questions → guided_ask
                   await askVaiga(text)
                 }
-
                 lastText.current = ''; setTranscript('')
                 if (processor && ws.readyState === WebSocket.OPEN) {
                   setMicState('listening'); processor.onaudioprocess = sendAudio
@@ -373,32 +399,23 @@ export default function StudentHelper() {
     else { window.speechSynthesis.cancel(); stopMic(); setTranscript('') }
   }
 
-  // ── Connect session — store steps ────────────────────────
-  // Current connectSession:
-const connectSession = async () => {
-  if (!sessionId.trim()) return alert('Enter session ID')
-  try {
-    const r    = await fetch(`${VM2_URL}/load_session/${encodeURIComponent(sessionId)}`)
-    const data = await r.json()
-    if (data.events?.length > 0) {
-      setSteps(data.events)
-      stepsRef.current   = data.events
-      setStepCount(data.events.length)
-
-      // ✅ Replace this:
-      // setCurrentStep(0)
-      // currentStepRef.current = 0
-
-      // ✅ With this:
-      const startStep = detectCurrentStep(data.events)
-      setCurrentStep(startStep)
-      currentStepRef.current = startStep
-
-      setConnected(true)
-      setAnswer(`✅ ${data.events.length} steps loaded! Starting from step ${startStep + 1}.`)
-    } else alert('Session not found or empty!')
-  } catch { alert('Connection failed!') }
-}
+  const connectSession = async () => {
+    if (!sessionId.trim()) return alert('Enter session ID')
+    try {
+      const r    = await fetch(`${VM2_URL}/load_session/${encodeURIComponent(sessionId)}`)
+      const data = await r.json()
+      if (data.events?.length > 0) {
+        setSteps(data.events)
+        stepsRef.current = data.events
+        setStepCount(data.events.length)
+        const startStep = detectCurrentStep(data.events)
+        setCurrentStep(startStep)
+        currentStepRef.current = startStep
+        setConnected(true)
+        setAnswer(`✅ ${data.events.length} steps loaded! Starting from step ${startStep + 1}.`)
+      } else alert('Session not found or empty!')
+    } catch { alert('Connection failed!') }
+  }
 
   const startScreenShare = async () => {
     try {
@@ -469,28 +486,19 @@ const connectSession = async () => {
 
   return (
     <div style={s.page}>
-      <div style={{ marginBottom: '20px' }}>
-  <button
-    onClick={() => navigate('/home')}
-    style={{
-      padding: '12px 20px',
-      borderRadius: '14px',
-      border: '1px solid rgba(255,255,255,0.08)',
-      background: 'linear-gradient(135deg,#1e293b,#0f172a)',
-      color: '#fff',
-      cursor: 'pointer',
-      fontWeight: 700,
-      fontSize: '0.92rem'
-    }}
-  >
-    ← Back to Home
-  </button>
-</div>
+      <div style={{ marginBottom:'20px' }}>
+        <button onClick={() => navigate('/home')} style={{
+          padding:'12px 20px', borderRadius:'14px',
+          border:'1px solid rgba(255,255,255,0.08)',
+          background:'linear-gradient(135deg,#1e293b,#0f172a)',
+          color:'#fff', cursor:'pointer', fontWeight:700, fontSize:'0.92rem'
+        }}>← Back to Home</button>
+      </div>
+
       <div style={s.floatingOrb} />
       <h1 style={s.heroTitle}>Vaiga AI</h1>
       <p style={s.heroSub}>GPS-style workflow navigation assistant</p>
 
-      {/* Screen */}
       <div style={{ position:'relative', borderRadius:'22px', overflow:'hidden',
         border:'1px solid rgba(255,255,255,0.08)', background:'#000', marginBottom:'24px' }}>
         <video ref={videoRef} autoPlay muted playsInline
@@ -502,7 +510,6 @@ const connectSession = async () => {
           </div>
         )}
 
-        {/* Arrow */}
         {arrow && screenStream && (
           <div style={{ position:'absolute', left:`${arrow.x}%`, top:`${arrow.y}%`,
             transform:'translate(-50%,-50%)', pointerEvents:'none', zIndex:999 }}>
@@ -516,12 +523,11 @@ const connectSession = async () => {
           </div>
         )}
 
-        {/* Auto badge */}
         {autoMode && screenStream && (
           <div style={{ position:'absolute', bottom:'8px', right:'8px',
             background:'rgba(16,185,129,0.2)', border:'1px solid #10b981',
             padding:'3px 10px', borderRadius:'8px', fontSize:'0.75rem', color:'#10b981' }}>
-            🤖 GPS Auto: {autoCountdown}s
+            🤖 Auto: {autoCountdown}s
           </div>
         )}
 
@@ -551,18 +557,11 @@ const connectSession = async () => {
       ) : (
         <div style={{ maxWidth:'900px' }}>
 
-          {/* GPS Progress */}
           <div style={{ ...s.card, borderColor:'#10b981' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
-              <p style={{ color:'#10b981', margin:0, fontWeight:700 }}>
-                ✅ {stepCount} steps loaded
-              </p>
-              <p style={{ color:'#f59e0b', margin:0, fontWeight:700 }}>
-                Step {currentStep + 1} / {stepCount}
-              </p>
+              <p style={{ color:'#10b981', margin:0, fontWeight:700 }}>✅ {stepCount} steps loaded</p>
+              <p style={{ color:'#f59e0b', margin:0, fontWeight:700 }}>Step {currentStep+1} / {stepCount}</p>
             </div>
-
-            {/* Progress bar */}
             <div style={{ background:'#1f2937', borderRadius:'8px', height:'8px', overflow:'hidden' }}>
               <div style={{
                 height:'100%', borderRadius:'8px',
@@ -571,7 +570,6 @@ const connectSession = async () => {
                 transition:'width 0.5s ease'
               }} />
             </div>
-
             {stepResult && (
               <p style={{ margin:'10px 0 0',
                 color:stepResult.startsWith('✅')?'#10b981':'#f59e0b',
@@ -579,31 +577,22 @@ const connectSession = async () => {
                 {stepResult}
               </p>
             )}
-
-            {/* Step navigation */}
             <div style={{ display:'flex', gap:'8px', marginTop:'12px' }}>
               <button onClick={() => {
                 const prev = Math.max(0, currentStep-1)
                 setCurrentStep(prev); currentStepRef.current = prev
                 guideCurrentStep(prev)
-              }} style={{ ...s.btn('#374151'), padding:'8px 16px', fontSize:'0.85rem' }}>
-                ← Prev
-              </button>
+              }} style={{ ...s.btn('#374151'), padding:'8px 16px', fontSize:'0.85rem' }}>← Prev</button>
               <button onClick={() => {
                 const next = Math.min(stepCount-1, currentStep+1)
                 setCurrentStep(next); currentStepRef.current = next
                 guideCurrentStep(next)
-              }} style={{ ...s.btn('#374151'), padding:'8px 16px', fontSize:'0.85rem' }}>
-                Next →
-              </button>
+              }} style={{ ...s.btn('#374151'), padding:'8px 16px', fontSize:'0.85rem' }}>Next →</button>
               <button onClick={() => guideCurrentStep(currentStep)}
-                style={{ ...s.btn('#4f46e5'), padding:'8px 16px', fontSize:'0.85rem' }}>
-                🔁 Repeat
-              </button>
+                style={{ ...s.btn('#4f46e5'), padding:'8px 16px', fontSize:'0.85rem' }}>🔁 Repeat</button>
             </div>
           </div>
 
-          {/* Screen share */}
           {!screenStream && (
             <div style={s.card}>
               <button onClick={startScreenShare}
@@ -613,7 +602,6 @@ const connectSession = async () => {
             </div>
           )}
 
-          {/* Mic + Auto */}
           <div style={{ ...s.card, textAlign:'center' }}>
             <button onClick={handleMicClick} style={{
               width:'125px', height:'125px', borderRadius:'50%',
@@ -627,9 +615,7 @@ const connectSession = async () => {
             }}>
               {micState==='idle'?'🎤':micState==='thinking'?'🧠':'🎙️'}
             </button>
-            <p style={{ color:micColor[micState], margin:0, fontWeight:700 }}>
-              {micLabel[micState]}
-            </p>
+            <p style={{ color:micColor[micState], margin:0, fontWeight:700 }}>{micLabel[micState]}</p>
             {transcript && (
               <p style={{ color:'#7dd3fc', fontSize:'0.9rem', marginTop:'10px', fontStyle:'italic' }}>
                 "{transcript}"
@@ -639,7 +625,6 @@ const connectSession = async () => {
               Say "next" or "done" to advance steps
             </p>
 
-            {/* Auto mode */}
             <div style={{ marginTop:'22px' }}>
               <button onClick={() => setAutoMode(p => !p)} style={{
                 width:'80px', height:'80px', borderRadius:'50%', border:'none',
@@ -653,17 +638,16 @@ const connectSession = async () => {
                 margin:'0 auto', display:'block'
               }}>🤖</button>
               <p style={{ color:autoMode?'#10b981':'#6b7280', margin:'10px 0 0', fontWeight:700 }}>
-                {autoMode?`GPS Auto ON (${autoCountdown}s)`:'Auto OFF'}
+                {autoMode?`Auto ON (${autoCountdown}s)`:'Auto OFF'}
               </p>
               {autoMode && (
                 <p style={{ color:'#475569', fontSize:'0.75rem', margin:'4px 0 0' }}>
-                  Expert steps follow chestundi — agent.py needed for auto click
+                  DOM → Playwright → Qwen — agent.py needed
                 </p>
               )}
             </div>
           </div>
 
-          {/* Manual ask */}
           <div style={s.card}>
             <p style={{ color:'#6b7280', fontSize:'0.8rem', margin:'0 0 10px' }}>
               Ask anything — Vaiga searches expert recording
@@ -680,7 +664,6 @@ const connectSession = async () => {
             </div>
           </div>
 
-          {/* Answer */}
           {answer && (
             <div style={{ ...s.card, borderColor:speaking?'#10b981':'rgba(124,58,237,0.4)' }}>
               <p style={{ color:speaking?'#10b981':'#7c3aed', fontSize:'0.8rem',

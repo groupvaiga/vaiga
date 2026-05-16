@@ -707,5 +707,51 @@ console.log(
   }, 1500)
 
 }, true)
+// ── DOM extraction ─────────────────────────────
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
+  if (msg.type === 'get-dom-elements') {
+
+    const elements = []
+
+    document
+      .querySelectorAll('button, a, input, select')
+      .forEach(el => {
+
+        const name = (
+          el.textContent ||
+          el.value ||
+          el.placeholder ||
+          el.getAttribute('aria-label') ||
+          el.name ||
+          ''
+        )
+        .trim()
+        .slice(0, 60)
+
+        if (!name) return
+
+        const rect = el.getBoundingClientRect()
+
+        elements.push({
+          name,
+          role: el.tagName.toLowerCase(),
+
+          x_pct:
+            Math.round(
+              ((rect.left + rect.width / 2) / window.innerWidth) * 1000
+            ) / 10,
+
+          y_pct:
+            Math.round(
+              ((rect.top + rect.height / 2) / window.innerHeight) * 1000
+            ) / 10,
+        })
+      })
+
+    sendResponse({ elements })
+
+    return true
+  }
+})
 }

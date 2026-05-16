@@ -73,6 +73,33 @@ chrome.runtime.onMessage.addListener((msg,sender,sendResponse)=>{
   if(msg.type==='get-page-info'){
     sendResponse(latestPageInfo); return true
   }
+  // ── Get DOM elements ──────────────────────────────────────
+if (msg.type === 'get-dom-elements') {
+
+  chrome.tabs.query(
+    { active: true, currentWindow: true },
+    (tabs) => {
+
+      if (!tabs[0]) {
+        sendResponse({ elements: [] })
+        return
+      }
+
+      chrome.tabs.sendMessage(
+        tabs[0].id,
+        { type: 'get-dom-elements' },
+        (res) => {
+
+          sendResponse({
+            elements: res?.elements || []
+          })
+        }
+      )
+    }
+  )
+
+  return true
+}
 
   // ── Mini broadcast ────────────────────────────────────────
   if(msg.type==='vaiga-mini-broadcast'){
