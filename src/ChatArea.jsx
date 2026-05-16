@@ -18,30 +18,36 @@ export default function ChatArea({
   }, [messages])
 
   // ✅ Hide when inactive
-  if (!chatActive) return null
+  const hidden = !chatActive
 
   return (
 
-    <div
-      style={{
+   <div
+  style={{
 
-        flex: 1,
+    flex: 1,
 
-        height: '100%',
+    height: '100%',
 
-        overflowY: 'auto',
+    opacity: hidden ? 0 : 1,
 
-        overflowX: 'hidden',
+    pointerEvents: hidden ? 'none' : 'auto',
 
-        padding: '12px',
+    transition: 'opacity 0.25s ease',
 
-        scrollbarWidth: 'none',
+    overflowY: 'auto',
 
-        msOverflowStyle: 'none',
+    overflowX: 'hidden',
 
-        position: 'relative'
-      }}
-    >
+    padding: '12px',
+
+    scrollbarWidth: 'none',
+
+    msOverflowStyle: 'none',
+
+    position: 'relative'
+  }}
+>
 
       {/* ── Chat Messages ───────────────── */}
       <div

@@ -785,10 +785,16 @@ const handleEndChat = async () => {
 }}>
 
   {/* ── CHAT COLUMN ───────────────── */}
- <div
+<div
   style={{
 
     width: '390px',
+
+    minWidth: '390px',
+
+    maxWidth: '390px',
+
+    flexShrink: 0,
 
     height: '760px',
 
